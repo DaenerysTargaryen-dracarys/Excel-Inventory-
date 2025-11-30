@@ -81,6 +81,14 @@
             background-color: #219653;
         }
         
+        .clear-btn {
+            background-color: #e74c3c;
+        }
+        
+        .clear-btn:hover {
+            background-color: #c0392b;
+        }
+        
         .table-container {
             overflow-x: auto;
             padding: 20px;
@@ -160,10 +168,64 @@
             margin-top: 10px;
         }
         
+        .success {
+            color: #27ae60;
+            margin-top: 10px;
+        }
+        
         .button-group {
             display: flex;
             gap: 10px;
             margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        /* Custom Number Pad Styles */
+        .number-pad {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #ddd;
+            padding: 10px;
+            display: none;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .number-pad button {
+            padding: 15px;
+            font-size: 18px;
+            background-color: #f8f9fa;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        
+        .number-pad button.operator {
+            background-color: #e9ecef;
+        }
+        
+        .number-pad button.equals {
+            background-color: #3498db;
+            color: white;
+            grid-column: span 2;
+        }
+        
+        .number-pad button.clear {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .number-pad button.backspace {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .number-pad.active {
+            display: grid;
         }
         
         @media (max-width: 768px) {
@@ -175,13 +237,17 @@
             .button-group {
                 flex-direction: column;
             }
+            
+            .number-pad {
+                display: grid;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>MATRIX DESING </h1>
+            <h1>Inventory Management System</h1>
             <p>Upload your Excel file and manage inventory with automatic calculations</p>
         </header>
         
@@ -192,9 +258,11 @@
             </div>
             <div class="button-group">
                 <button id="exportBtn" class="export-btn">Export to Excel</button>
+                <button id="clearBtn" class="clear-btn">Clear All Data</button>
             </div>
             <p>Supported formats: .xlsx, .xls</p>
             <div id="errorMessage" class="error"></div>
+            <div id="successMessage" class="success"></div>
         </div>
         
         <div class="table-container">
@@ -206,6 +274,30 @@
         <div class="notepad-section">
             <h3>Notes</h3>
             <textarea id="notepad" placeholder="Write your notes here..."></textarea>
+        </div>
+        
+        <!-- Custom Number Pad -->
+        <div class="number-pad" id="numberPad">
+            <button class="number" data-value="7">7</button>
+            <button class="number" data-value="8">8</button>
+            <button class="number" data-value="9">9</button>
+            <button class="operator" data-value="+">+</button>
+            <button class="number" data-value="4">4</button>
+            <button class="number" data-value="5">5</button>
+            <button class="number" data-value="6">6</button>
+            <button class="operator" data-value="-">-</button>
+            <button class="number" data-value="1">1</button>
+            <button class="number" data-value="2">2</button>
+            <button class="number" data-value="3">3</button>
+            <button class="operator" data-value="*">*</button>
+            <button class="number" data-value="0">0</button>
+            <button class="number" data-value=".">.</button>
+            <button class="operator" data-value="/">/</button>
+            <button class="operator" data-value="(">(</button>
+            <button class="operator" data-value=")">)</button>
+            <button class="backspace">⌫</button>
+            <button class="clear">C</button>
+            <button class="equals">=</button>
         </div>
         
         <footer>
@@ -221,12 +313,37 @@
             const fileInput = document.getElementById('fileInput');
             const uploadBtn = document.getElementById('uploadBtn');
             const exportBtn = document.getElementById('exportBtn');
+            const clearBtn = document.getElementById('clearBtn');
             const inventoryTable = document.getElementById('inventoryTable');
             const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
             const notepad = document.getElementById('notepad');
+            const numberPad = document.getElementById('numberPad');
             
-            // Load saved notes from localStorage
+            let currentInput = null;
+            
+            // Load saved data from localStorage
+            let tableData = [];
+            const savedTableData = localStorage.getItem('inventoryTableData');
             const savedNotes = localStorage.getItem('inventoryNotes');
+            
+            if (savedTableData) {
+                tableData = JSON.parse(savedTableData);
+                displayTable(tableData);
+                showSuccess('Previous data loaded successfully.');
+            } else {
+                // Sample data to display initially if no saved data
+                const sampleData = [
+                    { SLNO: 1, ITEM: "200ML Paper Glass", UOM: "PCS", QTY: "", TOTAL: "" },
+                    { SLNO: 2, ITEM: '4" Piri Piri Bun', UOM: "PCS", QTY: "", TOTAL: "" },
+                    { SLNO: 3, ITEM: '4" Piri Piri Bun Frozen', UOM: "PCS", QTY: "", TOTAL: "" },
+                    { SLNO: 4, ITEM: '4" Seeded Bun', UOM: "NOS", QTY: "", TOTAL: "" },
+                    { SLNO: 5, ITEM: '4" Seeded Bun Frozen', UOM: "PCS", QTY: "2*48+6*6+48", TOTAL: "180" }
+                ];
+                tableData = sampleData;
+                displayTable(tableData);
+            }
+            
             if (savedNotes) {
                 notepad.value = savedNotes;
             }
@@ -236,21 +353,46 @@
                 localStorage.setItem('inventoryNotes', notepad.value);
             });
             
-            // Sample data to display initially
-            const sampleData = [
-                { SLNO: 1, ITEM: "200ML Paper Glass", UOM: "PCS", QTY: "", TOTAL: "" },
-                { SLNO: 2, ITEM: '4" Piri Piri Bun', UOM: "PCS", QTY: "", TOTAL: "" },
-                { SLNO: 3, ITEM: '4" Piri Piri Bun Frozen', UOM: "PCS", QTY: "", TOTAL: "" },
-                { SLNO: 4, ITEM: '4" Seeded Bun', UOM: "NOS", QTY: "", TOTAL: "" },
-                { SLNO: 5, ITEM: '4" Seeded Bun Frozen', UOM: "PCS", QTY: "2*48+6*6+48", TOTAL: "180" }
-            ];
+            // Number Pad Event Listeners
+            numberPad.addEventListener('click', function(e) {
+                if (e.target.tagName === 'BUTTON' && currentInput) {
+                    const value = e.target.dataset.value;
+                    
+                    if (e.target.classList.contains('number') || e.target.classList.contains('operator')) {
+                        currentInput.value += value;
+                        currentInput.dispatchEvent(new Event('input'));
+                    } else if (e.target.classList.contains('backspace')) {
+                        currentInput.value = currentInput.value.slice(0, -1);
+                        currentInput.dispatchEvent(new Event('input'));
+                    } else if (e.target.classList.contains('clear')) {
+                        currentInput.value = '';
+                        currentInput.dispatchEvent(new Event('input'));
+                    } else if (e.target.classList.contains('equals')) {
+                        // Calculate and close number pad
+                        currentInput.dispatchEvent(new Event('blur'));
+                        hideNumberPad();
+                    }
+                }
+            });
             
-            // Display sample data initially
-            displayTable(sampleData);
+            // Show number pad when focusing on QTY input (mobile devices)
+            function showNumberPad(input) {
+                if (window.innerWidth <= 768) {
+                    currentInput = input;
+                    numberPad.classList.add('active');
+                }
+            }
+            
+            // Hide number pad
+            function hideNumberPad() {
+                numberPad.classList.remove('active');
+                currentInput = null;
+            }
             
             // Handle file upload
             uploadBtn.addEventListener('click', function() {
                 errorMessage.textContent = '';
+                successMessage.textContent = '';
                 
                 if (fileInput.files.length === 0) {
                     showError('Please select an Excel file to upload.');
@@ -294,7 +436,7 @@
                         }
                         
                         // Process the data (skip header row)
-                        const tableData = [];
+                        const newTableData = [];
                         const headers = jsonData[0];
                         
                         // Find column indices
@@ -318,7 +460,7 @@
                         for (let i = 1; i < jsonData.length; i++) {
                             const row = jsonData[i];
                             if (row && row.length > 0) {
-                                tableData.push({
+                                newTableData.push({
                                     SLNO: slnoIndex >= 0 ? (row[slnoIndex] || i) : i,
                                     ITEM: itemIndex >= 0 ? (row[itemIndex] || '') : '',
                                     UOM: uomIndex >= 0 ? (row[uomIndex] || '') : '',
@@ -328,12 +470,16 @@
                             }
                         }
                         
-                        if (tableData.length === 0) {
+                        if (newTableData.length === 0) {
                             showError('No valid data found in the Excel file.');
                             return;
                         }
                         
+                        tableData = newTableData;
                         displayTable(tableData);
+                        saveTableData();
+                        showSuccess('Excel file uploaded and data saved successfully.');
+                        
                     } catch (error) {
                         console.error('Error processing file:', error);
                         showError('Error processing the Excel file. Please make sure it is a valid Excel file.');
@@ -352,10 +498,32 @@
                 exportToExcel();
             });
             
+            // Handle clear all data
+            clearBtn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+                    localStorage.removeItem('inventoryTableData');
+                    localStorage.removeItem('inventoryNotes');
+                    tableData = [];
+                    displayTable([]);
+                    notepad.value = '';
+                    showSuccess('All data cleared successfully.');
+                }
+            });
+            
             // Function to display the table
             function displayTable(data) {
                 // Clear existing table
                 inventoryTable.innerHTML = '';
+                
+                if (data.length === 0) {
+                    const emptyMessage = document.createElement('p');
+                    emptyMessage.textContent = 'No inventory data available. Upload an Excel file to get started.';
+                    emptyMessage.style.padding = '20px';
+                    emptyMessage.style.textAlign = 'center';
+                    emptyMessage.style.color = '#6c757d';
+                    inventoryTable.appendChild(emptyMessage);
+                    return;
+                }
                 
                 // Create table header
                 const thead = document.createElement('thead');
@@ -397,8 +565,12 @@
                     qtyInput.type = 'text';
                     qtyInput.value = row.QTY || '';
                     qtyInput.dataset.slno = row.SLNO;
+                    qtyInput.setAttribute('inputmode', 'decimal'); // Hint for mobile keyboards
                     qtyInput.addEventListener('input', handleQtyChange);
                     qtyInput.addEventListener('blur', handleQtyChange);
+                    qtyInput.addEventListener('focus', function() {
+                        showNumberPad(this);
+                    });
                     qtyCell.appendChild(qtyInput);
                     tr.appendChild(qtyCell);
                     
@@ -431,15 +603,33 @@
                 
                 if (!expression) {
                     totalCell.textContent = '';
+                    updateTableData(slno, '', '');
                     return;
                 }
                 
                 try {
                     const result = evaluateExpression(expression);
                     totalCell.textContent = result;
+                    updateTableData(slno, expression, result);
                 } catch (error) {
                     totalCell.textContent = 'Error';
+                    updateTableData(slno, expression, 'Error');
                 }
+            }
+            
+            // Update table data and save to localStorage
+            function updateTableData(slno, qty, total) {
+                const index = tableData.findIndex(item => item.SLNO == slno);
+                if (index !== -1) {
+                    tableData[index].QTY = qty;
+                    tableData[index].TOTAL = total;
+                    saveTableData();
+                }
+            }
+            
+            // Save table data to localStorage
+            function saveTableData() {
+                localStorage.setItem('inventoryTableData', JSON.stringify(tableData));
             }
             
             // Safe expression evaluation
@@ -469,11 +659,7 @@
             // Export table data to Excel
             function exportToExcel() {
                 try {
-                    // Get table data
-                    const table = document.getElementById('inventoryTable');
-                    const rows = table.querySelectorAll('tr');
-                    
-                    if (rows.length <= 1) {
+                    if (tableData.length === 0) {
                         showError('No data to export.');
                         return;
                     }
@@ -482,30 +668,18 @@
                     const data = [];
                     
                     // Add headers
-                    const headerCells = rows[0].querySelectorAll('th');
-                    const headerRow = [];
-                    headerCells.forEach(cell => {
-                        headerRow.push(cell.textContent);
-                    });
-                    data.push(headerRow);
+                    data.push(['SLNO', 'ITEM', 'UOM', 'QTY', 'TOTAL']);
                     
                     // Add data rows
-                    for (let i = 1; i < rows.length; i++) {
-                        const cells = rows[i].querySelectorAll('td');
-                        const rowData = [];
-                        
-                        cells.forEach((cell, index) => {
-                            // For QTY column, get the input value
-                            if (index === 3) {
-                                const input = cell.querySelector('input');
-                                rowData.push(input ? input.value : '');
-                            } else {
-                                rowData.push(cell.textContent);
-                            }
-                        });
-                        
-                        data.push(rowData);
-                    }
+                    tableData.forEach(row => {
+                        data.push([
+                            row.SLNO,
+                            row.ITEM,
+                            row.UOM,
+                            row.QTY,
+                            row.TOTAL
+                        ]);
+                    });
                     
                     // Create worksheet
                     const ws = XLSX.utils.aoa_to_sheet(data);
@@ -524,6 +698,8 @@
                     a.click();
                     URL.revokeObjectURL(url);
                     
+                    showSuccess('Data exported to Excel successfully.');
+                    
                 } catch (error) {
                     console.error('Error exporting to Excel:', error);
                     showError('Error exporting data to Excel.');
@@ -533,7 +709,26 @@
             // Show error message
             function showError(message) {
                 errorMessage.textContent = message;
+                successMessage.textContent = '';
             }
+            
+            // Show success message
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                errorMessage.textContent = '';
+                
+                // Auto-hide success message after 3 seconds
+                setTimeout(() => {
+                    successMessage.textContent = '';
+                }, 3000);
+            }
+            
+            // Close number pad when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!numberPad.contains(e.target) && !e.target.classList.contains('qty-input')) {
+                    hideNumberPad();
+                }
+            });
         });
     </script>
 </body>
