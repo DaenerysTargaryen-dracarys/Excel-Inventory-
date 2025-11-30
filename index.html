@@ -89,6 +89,28 @@
             background-color: #c0392b;
         }
         
+        .sync-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
+            font-size: 14px;
+        }
+        
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #27ae60;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
         .table-container {
             overflow-x: auto;
             padding: 20px;
@@ -249,12 +271,20 @@
             }
         }
     </style>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Inventory Management System</h1>
             <p>Upload your Excel file and manage inventory with automatic calculations</p>
+            <div class="sync-indicator">
+                <span id="syncStatus">Connecting to Firebase...</span>
+                <div id="syncDot" class="sync-dot"></div>
+            </div>
         </header>
         
         <div class="upload-section">
@@ -307,7 +337,7 @@
         </div>
         
         <footer>
-            <p>Inventory Management System &copy; 2023</p>
+            <p>Inventory Management System &copy; 2023 | Real-time with Firebase</p>
         </footer>
     </div>
 
@@ -315,6 +345,21 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4qsqlqE7Yx8SuPFF1x0n_J_B6h7sFXRU",
+            authDomain: "daily-inventory-cb279.firebaseapp.com",
+            projectId: "daily-inventory-cb279",
+            storageBucket: "daily-inventory-cb279.firebasestorage.app",
+            messagingSenderId: "992764671815",
+            appId: "1:992764671815:web:4068ee83214420501ffe62",
+            measurementId: "G-6NP07M3TVS"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
         document.addEventListener('DOMContentLoaded', function() {
             const fileInput = document.getElementById('fileInput');
             const uploadBtn = document.getElementById('uploadBtn');
@@ -325,39 +370,37 @@
             const successMessage = document.getElementById('successMessage');
             const notepad = document.getElementById('notepad');
             const numberPad = document.getElementById('numberPad');
+            const syncStatus = document.getElementById('syncStatus');
+            const syncDot = document.getElementById('syncDot');
             
             let currentInput = null;
-            
-            // Load saved data from localStorage
             let tableData = [];
-            const savedTableData = localStorage.getItem('inventoryTableData');
-            const savedNotes = localStorage.getItem('inventoryNotes');
+            let isOnline = false;
             
-            if (savedTableData) {
-                tableData = JSON.parse(savedTableData);
-                displayTable(tableData);
-                showSuccess('Previous data loaded successfully.');
-            } else {
-                // Sample data to display initially if no saved data
-                const sampleData = [
-                    { SLNO: 1, ITEM: "200ML Paper Glass", UOM: "PCS", QTY: "", TOTAL: "" },
-                    { SLNO: 2, ITEM: '4" Piri Piri Bun', UOM: "PCS", QTY: "", TOTAL: "" },
-                    { SLNO: 3, ITEM: '4" Piri Piri Bun Frozen', UOM: "PCS", QTY: "", TOTAL: "" },
-                    { SLNO: 4, ITEM: '4" Seeded Bun', UOM: "NOS", QTY: "", TOTAL: "" },
-                    { SLNO: 5, ITEM: '4" Seeded Bun Frozen', UOM: "PCS", QTY: "2*48+6*6+48", TOTAL: "180" }
-                ];
-                tableData = sampleData;
-                displayTable(tableData);
-            }
+            // Firebase connection state listener
+            firebase.firestore().enablePersistence()
+                .then(() => {
+                    isOnline = true;
+                    updateSyncStatus('Connected to Firebase', true);
+                })
+                .catch((err) => {
+                    if (err.code == 'failed-precondition') {
+                        console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+                    } else if (err.code == 'unimplemented') {
+                        console.warn('The current browser does not support persistence');
+                    }
+                    isOnline = true;
+                    updateSyncStatus('Connected to Firebase', true);
+                });
             
-            if (savedNotes) {
-                notepad.value = savedNotes;
-            }
-            
-            // Save notes when user types
-            notepad.addEventListener('input', function() {
-                localStorage.setItem('inventoryNotes', notepad.value);
+            // Listen for connection state changes
+            firebase.firestore().onSnapshotsInSync(() => {
+                isOnline = true;
+                updateSyncStatus('Synced with Firebase', true);
             });
+            
+            // Load data from Firebase
+            loadDataFromFirebase();
             
             // Number Pad Event Listeners
             numberPad.addEventListener('click', function(e) {
@@ -489,7 +532,7 @@
                         
                         tableData = newTableData;
                         displayTable(tableData);
-                        saveTableData();
+                        saveDataToFirebase();
                         showSuccess('Excel file uploaded and data saved successfully.');
                         
                     } catch (error) {
@@ -513,12 +556,7 @@
             // Handle clear all data
             clearBtn.addEventListener('click', function() {
                 if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
-                    localStorage.removeItem('inventoryTableData');
-                    localStorage.removeItem('inventoryNotes');
-                    tableData = [];
-                    displayTable([]);
-                    notepad.value = '';
-                    showSuccess('All data cleared successfully.');
+                    clearFirebaseData();
                 }
             });
             
@@ -633,19 +671,14 @@
                 }
             }
             
-            // Update table data and save to localStorage
+            // Update table data and save to Firebase
             function updateTableData(slno, qty, total) {
                 const index = tableData.findIndex(item => item.SLNO == slno);
                 if (index !== -1) {
                     tableData[index].QTY = qty;
                     tableData[index].TOTAL = total;
-                    saveTableData();
+                    saveDataToFirebase();
                 }
-            }
-            
-            // Save table data to localStorage
-            function saveTableData() {
-                localStorage.setItem('inventoryTableData', JSON.stringify(tableData));
             }
             
             // Safe expression evaluation
@@ -723,6 +756,77 @@
                     console.error('Error exporting to Excel:', error);
                     showError('Error exporting data to Excel.');
                 }
+            }
+            
+            // Firebase Functions
+            function loadDataFromFirebase() {
+                db.collection("inventory").doc("data")
+                    .onSnapshot((doc) => {
+                        if (doc.exists) {
+                            const data = doc.data();
+                            tableData = data.tableData || [];
+                            notepad.value = data.notes || '';
+                            displayTable(tableData);
+                            updateSyncStatus('Data loaded from Firebase', true);
+                        } else {
+                            // No data in Firebase, use sample data
+                            const sampleData = [
+                                { SLNO: 1, ITEM: "200ML Paper Glass", UOM: "PCS", QTY: "", TOTAL: "" },
+                                { SLNO: 2, ITEM: '4" Piri Piri Bun', UOM: "PCS", QTY: "", TOTAL: "" },
+                                { SLNO: 3, ITEM: '4" Piri Piri Bun Frozen', UOM: "PCS", QTY: "", TOTAL: "" },
+                                { SLNO: 4, ITEM: '4" Seeded Bun', UOM: "NOS", QTY: "", TOTAL: "" },
+                                { SLNO: 5, ITEM: '4" Seeded Bun Frozen', UOM: "PCS", QTY: "2*48+6*6+48", TOTAL: "180" }
+                            ];
+                            tableData = sampleData;
+                            displayTable(tableData);
+                            saveDataToFirebase(); // Save sample data to Firebase
+                        }
+                    }, (error) => {
+                        console.error("Error loading data from Firebase:", error);
+                        updateSyncStatus('Error connecting to Firebase', false);
+                    });
+            }
+            
+            function saveDataToFirebase() {
+                const notes = notepad.value;
+                
+                db.collection("inventory").doc("data").set({
+                    tableData: tableData,
+                    notes: notes,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                })
+                .then(() => {
+                    updateSyncStatus('Data saved to Firebase', true);
+                })
+                .catch((error) => {
+                    console.error("Error saving data to Firebase:", error);
+                    updateSyncStatus('Error saving to Firebase', false);
+                });
+            }
+            
+            function clearFirebaseData() {
+                db.collection("inventory").doc("data").delete()
+                .then(() => {
+                    tableData = [];
+                    notepad.value = '';
+                    displayTable([]);
+                    showSuccess('All data cleared successfully.');
+                    updateSyncStatus('Data cleared from Firebase', true);
+                })
+                .catch((error) => {
+                    console.error("Error clearing data from Firebase:", error);
+                    showError('Error clearing data from Firebase.');
+                });
+            }
+            
+            // Save notes to Firebase when changed
+            notepad.addEventListener('input', function() {
+                saveDataToFirebase();
+            });
+            
+            function updateSyncStatus(message, isConnected) {
+                syncStatus.textContent = message;
+                syncDot.style.backgroundColor = isConnected ? '#27ae60' : '#e74c3c';
             }
             
             // Show error message
