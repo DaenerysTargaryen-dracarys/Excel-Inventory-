@@ -202,52 +202,72 @@
             flex-wrap: wrap;
         }
         
-        /* Custom Number Pad Styles */
-        .number-pad {
+        /* WhatsApp Style Keyboard */
+        .whatsapp-keyboard {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: white;
-            border-top: 1px solid #ddd;
-            padding: 10px;
+            background: #e8e8e8;
+            border-top: 1px solid #ccc;
+            padding: 8px;
             display: none;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 5px;
+            flex-direction: column;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             z-index: 1000;
         }
         
-        .number-pad button {
-            padding: 15px;
+        .keyboard-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .keyboard-btn {
+            flex: 1;
+            height: 50px;
+            margin: 0 4px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
             font-size: 18px;
-            background-color: #f8f9fa;
-            color: #333;
-            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
         }
         
-        .number-pad button.operator {
-            background-color: #e9ecef;
+        .keyboard-btn:active {
+            background-color: #d4d4d4;
         }
         
-        .number-pad button.equals {
-            background-color: #3498db;
-            color: white;
-            grid-column: span 2;
+        .keyboard-btn.operator {
+            background-color: #f0f0f0;
         }
         
-        .number-pad button.clear {
-            background-color: #e74c3c;
-            color: white;
-        }
-        
-        .number-pad button.backspace {
-            background-color: #f39c12;
+        .keyboard-btn.equals {
+            background-color: #128C7E;
             color: white;
         }
         
-        .number-pad.active {
-            display: grid;
+        .keyboard-btn.backspace {
+            background-color: #f0f0f0;
+            font-size: 22px;
+        }
+        
+        .keyboard-btn.space {
+            flex: 3;
+        }
+        
+        .keyboard-btn.symbols {
+            font-size: 14px;
+            padding: 0 5px;
+        }
+        
+        .whatsapp-keyboard.active {
+            display: flex;
         }
         
         @media (max-width: 768px) {
@@ -260,13 +280,9 @@
                 flex-direction: column;
             }
             
-            .number-pad {
-                display: grid;
-            }
-            
             /* Make inputs more touch-friendly on mobile */
             input[type="text"] {
-                font-size: 16px; /* Prevents zoom on iOS */
+                font-size: 16px;
                 padding: 12px 8px;
             }
         }
@@ -312,28 +328,34 @@
             <textarea id="notepad" placeholder="Write your notes here..."></textarea>
         </div>
         
-        <!-- Custom Number Pad -->
-        <div class="number-pad" id="numberPad">
-            <button class="number" data-value="7">7</button>
-            <button class="number" data-value="8">8</button>
-            <button class="number" data-value="9">9</button>
-            <button class="operator" data-value="+">+</button>
-            <button class="number" data-value="4">4</button>
-            <button class="number" data-value="5">5</button>
-            <button class="number" data-value="6">6</button>
-            <button class="operator" data-value="-">-</button>
-            <button class="number" data-value="1">1</button>
-            <button class="number" data-value="2">2</button>
-            <button class="number" data-value="3">3</button>
-            <button class="operator" data-value="*">×</button>
-            <button class="number" data-value="0">0</button>
-            <button class="number" data-value=".">.</button>
-            <button class="operator" data-value="/">÷</button>
-            <button class="operator" data-value="(">(</button>
-            <button class="operator" data-value=")">)</button>
-            <button class="backspace">⌫</button>
-            <button class="clear">C</button>
-            <button class="equals">=</button>
+        <!-- WhatsApp Style Keyboard -->
+        <div class="whatsapp-keyboard" id="whatsappKeyboard">
+            <div class="keyboard-row">
+                <div class="keyboard-btn operator" data-value="+">+</div>
+                <div class="keyboard-btn number" data-value="1">1</div>
+                <div class="keyboard-btn number" data-value="2">2</div>
+                <div class="keyboard-btn number" data-value="3">3</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="keyboard-btn operator" data-value="-">-</div>
+                <div class="keyboard-btn number" data-value="4">4</div>
+                <div class="keyboard-btn number" data-value="5">5</div>
+                <div class="keyboard-btn number" data-value="6">6</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="keyboard-btn operator" data-value="*">*</div>
+                <div class="keyboard-btn number" data-value="7">7</div>
+                <div class="keyboard-btn number" data-value="8">8</div>
+                <div class="keyboard-btn number" data-value="9">9</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="keyboard-btn symbols" data-value="abc">ABC</div>
+                <div class="keyboard-btn symbols" data-value=",!?#">, !?#</div>
+                <div class="keyboard-btn number" data-value="0">0</div>
+                <div class="keyboard-btn equals" data-value="=">=</div>
+                <div class="keyboard-btn number" data-value=".">.</div>
+                <div class="keyboard-btn backspace" data-value="backspace">↔</div>
+            </div>
         </div>
         
         <footer>
@@ -369,7 +391,7 @@
             const errorMessage = document.getElementById('errorMessage');
             const successMessage = document.getElementById('successMessage');
             const notepad = document.getElementById('notepad');
-            const numberPad = document.getElementById('numberPad');
+            const whatsappKeyboard = document.getElementById('whatsappKeyboard');
             const syncStatus = document.getElementById('syncStatus');
             const syncDot = document.getElementById('syncDot');
             
@@ -402,42 +424,43 @@
             // Load data from Firebase
             loadDataFromFirebase();
             
-            // Number Pad Event Listeners
-            numberPad.addEventListener('click', function(e) {
-                if (e.target.tagName === 'BUTTON' && currentInput) {
+            // WhatsApp Keyboard Event Listeners
+            whatsappKeyboard.addEventListener('click', function(e) {
+                if (e.target.classList.contains('keyboard-btn') && currentInput) {
                     const value = e.target.dataset.value;
                     
-                    if (e.target.classList.contains('number') || e.target.classList.contains('operator')) {
-                        currentInput.value += value;
-                        currentInput.dispatchEvent(new Event('input'));
-                    } else if (e.target.classList.contains('backspace')) {
+                    if (value === 'backspace') {
                         currentInput.value = currentInput.value.slice(0, -1);
                         currentInput.dispatchEvent(new Event('input'));
-                    } else if (e.target.classList.contains('clear')) {
-                        currentInput.value = '';
-                        currentInput.dispatchEvent(new Event('input'));
-                    } else if (e.target.classList.contains('equals')) {
-                        // Calculate and close number pad
+                    } else if (value === '=') {
+                        // Calculate and close keyboard
                         currentInput.dispatchEvent(new Event('blur'));
-                        hideNumberPad();
+                        hideKeyboard();
+                    } else if (value === 'abc' || value === ',!?#') {
+                        // These buttons don't insert text in this implementation
+                        // In a full implementation, they would switch keyboard modes
+                    } else {
+                        currentInput.value += value;
+                        currentInput.dispatchEvent(new Event('input'));
                     }
                 }
             });
             
-            // Show number pad when focusing on QTY input (mobile devices)
-            function showNumberPad(input) {
+            // Show keyboard when focusing on QTY input (mobile devices)
+            function showKeyboard(input) {
                 if (window.innerWidth <= 768) {
                     currentInput = input;
-                    numberPad.classList.add('active');
+                    whatsappKeyboard.classList.add('active');
                     
                     // Prevent default keyboard from showing
                     input.setAttribute('readonly', 'true');
+                    input.blur(); // Remove focus to prevent default keyboard
                 }
             }
             
-            // Hide number pad
-            function hideNumberPad() {
-                numberPad.classList.remove('active');
+            // Hide keyboard
+            function hideKeyboard() {
+                whatsappKeyboard.classList.remove('active');
                 if (currentInput) {
                     currentInput.removeAttribute('readonly');
                 }
@@ -618,12 +641,12 @@
                     
                     // Use pattern and inputmode to encourage full keyboard on mobile
                     qtyInput.setAttribute('pattern', '[0-9+\\-*/().]*');
-                    qtyInput.setAttribute('inputmode', 'text'); // Changed from 'decimal' to 'text'
+                    qtyInput.setAttribute('inputmode', 'none'); // Prevent default keyboard
                     
                     qtyInput.addEventListener('input', handleQtyChange);
                     qtyInput.addEventListener('blur', handleQtyChange);
                     qtyInput.addEventListener('focus', function() {
-                        showNumberPad(this);
+                        showKeyboard(this);
                     });
                     qtyCell.appendChild(qtyInput);
                     tr.appendChild(qtyCell);
@@ -846,12 +869,12 @@
                 }, 3000);
             }
             
-            // Close number pad when clicking outside
+            // Close keyboard when clicking outside
             document.addEventListener('click', function(e) {
-                if (numberPad.classList.contains('active') && 
-                    !numberPad.contains(e.target) && 
+                if (whatsappKeyboard.classList.contains('active') && 
+                    !whatsappKeyboard.contains(e.target) && 
                     !e.target.classList.contains('qty-input')) {
-                    hideNumberPad();
+                    hideKeyboard();
                 }
             });
         });
