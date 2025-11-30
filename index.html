@@ -241,6 +241,12 @@
             .number-pad {
                 display: grid;
             }
+            
+            /* Make inputs more touch-friendly on mobile */
+            input[type="text"] {
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: 12px 8px;
+            }
         }
     </style>
 </head>
@@ -289,10 +295,10 @@
             <button class="number" data-value="1">1</button>
             <button class="number" data-value="2">2</button>
             <button class="number" data-value="3">3</button>
-            <button class="operator" data-value="*">*</button>
+            <button class="operator" data-value="*">×</button>
             <button class="number" data-value="0">0</button>
             <button class="number" data-value=".">.</button>
-            <button class="operator" data-value="/">/</button>
+            <button class="operator" data-value="/">÷</button>
             <button class="operator" data-value="(">(</button>
             <button class="operator" data-value=")">)</button>
             <button class="backspace">⌫</button>
@@ -380,12 +386,18 @@
                 if (window.innerWidth <= 768) {
                     currentInput = input;
                     numberPad.classList.add('active');
+                    
+                    // Prevent default keyboard from showing
+                    input.setAttribute('readonly', 'true');
                 }
             }
             
             // Hide number pad
             function hideNumberPad() {
                 numberPad.classList.remove('active');
+                if (currentInput) {
+                    currentInput.removeAttribute('readonly');
+                }
                 currentInput = null;
             }
             
@@ -565,7 +577,11 @@
                     qtyInput.type = 'text';
                     qtyInput.value = row.QTY || '';
                     qtyInput.dataset.slno = row.SLNO;
-                    qtyInput.setAttribute('inputmode', 'decimal'); // Hint for mobile keyboards
+                    
+                    // Use pattern and inputmode to encourage full keyboard on mobile
+                    qtyInput.setAttribute('pattern', '[0-9+\\-*/().]*');
+                    qtyInput.setAttribute('inputmode', 'text'); // Changed from 'decimal' to 'text'
+                    
                     qtyInput.addEventListener('input', handleQtyChange);
                     qtyInput.addEventListener('blur', handleQtyChange);
                     qtyInput.addEventListener('focus', function() {
@@ -634,8 +650,11 @@
             
             // Safe expression evaluation
             function evaluateExpression(expression) {
-                // Remove any potentially dangerous characters
-                const sanitized = expression.replace(/[^0-9+\-*/().]/g, '');
+                // Replace common multiplication and division symbols
+                const sanitized = expression
+                    .replace(/×/g, '*')
+                    .replace(/÷/g, '/')
+                    .replace(/[^0-9+\-*/().]/g, '');
                 
                 // Use a safer evaluation method
                 try {
@@ -725,7 +744,9 @@
             
             // Close number pad when clicking outside
             document.addEventListener('click', function(e) {
-                if (!numberPad.contains(e.target) && !e.target.classList.contains('qty-input')) {
+                if (numberPad.classList.contains('active') && 
+                    !numberPad.contains(e.target) && 
+                    !e.target.classList.contains('qty-input')) {
                     hideNumberPad();
                 }
             });
