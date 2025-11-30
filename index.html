@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management System</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            margin-bottom: 10px;
+        }
+        
+        .upload-section {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .file-input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        input[type="file"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .export-btn {
+            background-color: #27ae60;
+        }
+        
+        .export-btn:hover {
+            background-color: #219653;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            padding: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #2c3e50;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tr:hover {
+            background-color: #e9f7fe;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .total-cell {
+            font-weight: bold;
+            background-color: #e8f5e9;
+        }
+        
+        .notepad-section {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .notepad-section h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            th, td {
+                padding: 8px 10px;
+                font-size: 0.9rem;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MATRIX DESING </h1>
+            <p>Upload your Excel file and manage inventory with automatic calculations</p>
+        </header>
+        
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" accept=".xlsx, .xls">
+                <button id="uploadBtn">Upload Excel File</button>
+            </div>
+            <div class="button-group">
+                <button id="exportBtn" class="export-btn">Export to Excel</button>
+            </div>
+            <p>Supported formats: .xlsx, .xls</p>
+            <div id="errorMessage" class="error"></div>
+        </div>
+        
+        <div class="table-container">
+            <table id="inventoryTable">
+                <!-- Table will be populated by JavaScript -->
+            </table>
+        </div>
+        
+        <div class="notepad-section">
+            <h3>Notes</h3>
+            <textarea id="notepad" placeholder="Write your notes here..."></textarea>
+        </div>
+        
+        <footer>
+            <p>Inventory Management System &copy; 2023</p>
+        </footer>
+    </div>
+
+    <!-- Include SheetJS library for Excel file processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const inventoryTable = document.getElementById('inventoryTable');
+            const errorMessage = document.getElementById('errorMessage');
+            const notepad = document.getElementById('notepad');
+            
+            // Load saved notes from localStorage
+            const savedNotes = localStorage.getItem('inventoryNotes');
+            if (savedNotes) {
+                notepad.value = savedNotes;
+            }
+            
+            // Save notes when user types
+            notepad.addEventListener('input', function() {
+                localStorage.setItem('inventoryNotes', notepad.value);
+            });
+            
+            // Sample data to display initially
+            const sampleData = [
+                { SLNO: 1, ITEM: "200ML Paper Glass", UOM: "PCS", QTY: "", TOTAL: "" },
+                { SLNO: 2, ITEM: '4" Piri Piri Bun', UOM: "PCS", QTY: "", TOTAL: "" },
+                { SLNO: 3, ITEM: '4" Piri Piri Bun Frozen', UOM: "PCS", QTY: "", TOTAL: "" },
+                { SLNO: 4, ITEM: '4" Seeded Bun', UOM: "NOS", QTY: "", TOTAL: "" },
+                { SLNO: 5, ITEM: '4" Seeded Bun Frozen', UOM: "PCS", QTY: "2*48+6*6+48", TOTAL: "180" }
+            ];
+            
+            // Display sample data initially
+            displayTable(sampleData);
+            
+            // Handle file upload
+            uploadBtn.addEventListener('click', function() {
+                errorMessage.textContent = '';
+                
+                if (fileInput.files.length === 0) {
+                    showError('Please select an Excel file to upload.');
+                    return;
+                }
+                
+                const file = fileInput.files[0];
+                
+                // Validate file type
+                if (!file.name.match(/\.(xlsx|xls)$/)) {
+                    showError('Please select a valid Excel file (.xlsx or .xls).');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        if (workbook.SheetNames.length === 0) {
+                            showError('The Excel file contains no sheets.');
+                            return;
+                        }
+                        
+                        // Get the first worksheet
+                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                        
+                        if (!worksheet) {
+                            showError('The first sheet in the Excel file is empty.');
+                            return;
+                        }
+                        
+                        // Convert to JSON - using header: 1 to get array of arrays
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        
+                        if (jsonData.length <= 1) {
+                            showError('The Excel file does not contain enough data.');
+                            return;
+                        }
+                        
+                        // Process the data (skip header row)
+                        const tableData = [];
+                        const headers = jsonData[0];
+                        
+                        // Find column indices
+                        const slnoIndex = headers.findIndex(h => 
+                            h && h.toString().toLowerCase().includes('slno') || 
+                            h && h.toString().toLowerCase().includes('no')
+                        );
+                        const itemIndex = headers.findIndex(h => 
+                            h && h.toString().toLowerCase().includes('item')
+                        );
+                        const uomIndex = headers.findIndex(h => 
+                            h && h.toString().toLowerCase().includes('uom')
+                        );
+                        const qtyIndex = headers.findIndex(h => 
+                            h && h.toString().toLowerCase().includes('qty')
+                        );
+                        const totalIndex = headers.findIndex(h => 
+                            h && h.toString().toLowerCase().includes('total')
+                        );
+                        
+                        for (let i = 1; i < jsonData.length; i++) {
+                            const row = jsonData[i];
+                            if (row && row.length > 0) {
+                                tableData.push({
+                                    SLNO: slnoIndex >= 0 ? (row[slnoIndex] || i) : i,
+                                    ITEM: itemIndex >= 0 ? (row[itemIndex] || '') : '',
+                                    UOM: uomIndex >= 0 ? (row[uomIndex] || '') : '',
+                                    QTY: qtyIndex >= 0 ? (row[qtyIndex] || '') : '',
+                                    TOTAL: totalIndex >= 0 ? (row[totalIndex] || '') : ''
+                                });
+                            }
+                        }
+                        
+                        if (tableData.length === 0) {
+                            showError('No valid data found in the Excel file.');
+                            return;
+                        }
+                        
+                        displayTable(tableData);
+                    } catch (error) {
+                        console.error('Error processing file:', error);
+                        showError('Error processing the Excel file. Please make sure it is a valid Excel file.');
+                    }
+                };
+                
+                reader.onerror = function() {
+                    showError('Error reading the file.');
+                };
+                
+                reader.readAsArrayBuffer(file);
+            });
+            
+            // Handle export to Excel
+            exportBtn.addEventListener('click', function() {
+                exportToExcel();
+            });
+            
+            // Function to display the table
+            function displayTable(data) {
+                // Clear existing table
+                inventoryTable.innerHTML = '';
+                
+                // Create table header
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                
+                ['SLNO', 'ITEM', 'UOM', 'QTY', 'TOTAL'].forEach(headerText => {
+                    const th = document.createElement('th');
+                    th.textContent = headerText;
+                    headerRow.appendChild(th);
+                });
+                
+                thead.appendChild(headerRow);
+                inventoryTable.appendChild(thead);
+                
+                // Create table body
+                const tbody = document.createElement('tbody');
+                
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    
+                    // SLNO column
+                    const slnoCell = document.createElement('td');
+                    slnoCell.textContent = row.SLNO;
+                    tr.appendChild(slnoCell);
+                    
+                    // ITEM column
+                    const itemCell = document.createElement('td');
+                    itemCell.textContent = row.ITEM;
+                    tr.appendChild(itemCell);
+                    
+                    // UOM column
+                    const uomCell = document.createElement('td');
+                    uomCell.textContent = row.UOM;
+                    tr.appendChild(uomCell);
+                    
+                    // QTY column (editable)
+                    const qtyCell = document.createElement('td');
+                    const qtyInput = document.createElement('input');
+                    qtyInput.type = 'text';
+                    qtyInput.value = row.QTY || '';
+                    qtyInput.dataset.slno = row.SLNO;
+                    qtyInput.addEventListener('input', handleQtyChange);
+                    qtyInput.addEventListener('blur', handleQtyChange);
+                    qtyCell.appendChild(qtyInput);
+                    tr.appendChild(qtyCell);
+                    
+                    // TOTAL column
+                    const totalCell = document.createElement('td');
+                    // Calculate initial total if QTY has expression
+                    if (row.QTY && row.QTY.trim()) {
+                        const calculatedTotal = evaluateExpression(row.QTY);
+                        totalCell.textContent = calculatedTotal;
+                    } else {
+                        totalCell.textContent = row.TOTAL || '';
+                    }
+                    totalCell.classList.add('total-cell');
+                    totalCell.dataset.slno = row.SLNO;
+                    tr.appendChild(totalCell);
+                    
+                    tbody.appendChild(tr);
+                });
+                
+                inventoryTable.appendChild(tbody);
+            }
+            
+            // Handle changes in QTY input
+            function handleQtyChange(event) {
+                const slno = event.target.dataset.slno;
+                const expression = event.target.value.trim();
+                
+                // Find the corresponding TOTAL cell
+                const totalCell = document.querySelector(`.total-cell[data-slno="${slno}"]`);
+                
+                if (!expression) {
+                    totalCell.textContent = '';
+                    return;
+                }
+                
+                try {
+                    const result = evaluateExpression(expression);
+                    totalCell.textContent = result;
+                } catch (error) {
+                    totalCell.textContent = 'Error';
+                }
+            }
+            
+            // Safe expression evaluation
+            function evaluateExpression(expression) {
+                // Remove any potentially dangerous characters
+                const sanitized = expression.replace(/[^0-9+\-*/().]/g, '');
+                
+                // Use a safer evaluation method
+                try {
+                    // Create a math expression parser
+                    const tokens = sanitized.match(/(\d+\.?\d*|[+\-*/()])/g);
+                    if (!tokens) throw new Error('Invalid expression');
+                    
+                    // Convert to a safe evaluation
+                    const result = Function(`"use strict"; return (${sanitized})`)();
+                    
+                    if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) {
+                        throw new Error('Invalid result');
+                    }
+                    
+                    return result;
+                } catch (error) {
+                    throw new Error('Cannot evaluate expression');
+                }
+            }
+            
+            // Export table data to Excel
+            function exportToExcel() {
+                try {
+                    // Get table data
+                    const table = document.getElementById('inventoryTable');
+                    const rows = table.querySelectorAll('tr');
+                    
+                    if (rows.length <= 1) {
+                        showError('No data to export.');
+                        return;
+                    }
+                    
+                    // Create data array
+                    const data = [];
+                    
+                    // Add headers
+                    const headerCells = rows[0].querySelectorAll('th');
+                    const headerRow = [];
+                    headerCells.forEach(cell => {
+                        headerRow.push(cell.textContent);
+                    });
+                    data.push(headerRow);
+                    
+                    // Add data rows
+                    for (let i = 1; i < rows.length; i++) {
+                        const cells = rows[i].querySelectorAll('td');
+                        const rowData = [];
+                        
+                        cells.forEach((cell, index) => {
+                            // For QTY column, get the input value
+                            if (index === 3) {
+                                const input = cell.querySelector('input');
+                                rowData.push(input ? input.value : '');
+                            } else {
+                                rowData.push(cell.textContent);
+                            }
+                        });
+                        
+                        data.push(rowData);
+                    }
+                    
+                    // Create worksheet
+                    const ws = XLSX.utils.aoa_to_sheet(data);
+                    
+                    // Create workbook
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Inventory');
+                    
+                    // Generate file and trigger download
+                    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'inventory_data.xlsx';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    
+                } catch (error) {
+                    console.error('Error exporting to Excel:', error);
+                    showError('Error exporting data to Excel.');
+                }
+            }
+            
+            // Show error message
+            function showError(message) {
+                errorMessage.textContent = message;
+            }
+        });
+    </script>
+</body>
+</html>
