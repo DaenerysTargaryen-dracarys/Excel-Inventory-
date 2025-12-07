@@ -61,15 +61,23 @@
         
         button {
             padding: 10px 20px;
-            background-color: #3498db;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s;
+            font-weight: 600;
         }
         
         button:hover {
+            opacity: 0.9;
+        }
+        
+        #uploadBtn {
+            background-color: #3498db;
+        }
+        
+        #uploadBtn:hover {
             background-color: #2980b9;
         }
         
@@ -81,34 +89,28 @@
             background-color: #219653;
         }
         
-        .clear-btn {
+        .save-btn {
+            background-color: #9b59b6;
+        }
+        
+        .save-btn:hover {
+            background-color: #8e44ad;
+        }
+        
+        .delete-btn {
             background-color: #e74c3c;
         }
         
-        .clear-btn:hover {
+        .delete-btn:hover {
             background-color: #c0392b;
         }
         
-        .sync-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            margin-left: 10px;
-            font-size: 14px;
+        .load-btn {
+            background-color: #f39c12;
         }
         
-        .sync-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: #27ae60;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+        .load-btn:hover {
+            background-color: #d35400;
         }
         
         .table-container {
@@ -153,6 +155,25 @@
         .total-cell {
             font-weight: bold;
             background-color: #e8f5e9;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .action-btn {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            border-radius: 3px;
+        }
+        
+        .edit-btn {
+            background-color: #3498db;
+        }
+        
+        .remove-btn {
+            background-color: #e74c3c;
         }
         
         .notepad-section {
@@ -202,84 +223,12 @@
             flex-wrap: wrap;
         }
         
-        /* Clean Calculator Keyboard */
-        .calc-keyboard {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #f0f0f0;
-            border-top: 1px solid #ccc;
-            padding: 10px;
-            display: none;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(5, 1fr);
-            gap: 8px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            z-index: 1000;
-        }
-        
-        .calc-btn {
-            height: 60px;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.1s;
-        }
-        
-        .calc-btn:active {
-            background-color: #e0e0e0;
-            transform: scale(0.95);
-        }
-        
-        .calc-btn.number {
-            background-color: white;
-            color: #333;
-        }
-        
-        .calc-btn.operator {
-            background-color: #f8f9fa;
-            color: #3498db;
-            font-weight: bold;
-        }
-        
-        .calc-btn.equals {
-            background-color: #3498db;
-            color: white;
-            grid-column: span 2;
-        }
-        
-        .calc-btn.clear {
-            background-color: #e74c3c;
-            color: white;
-            font-size: 18px;
-        }
-        
-        .calc-btn.backspace {
-            background-color: #f39c12;
-            color: white;
-            font-size: 20px;
-        }
-        
-        .calc-btn.parentheses {
-            background-color: #f8f9fa;
-            color: #666;
-            font-size: 20px;
-        }
-        
-        .calc-btn.decimal {
-            background-color: white;
-            color: #333;
-        }
-        
-        .calc-keyboard.active {
-            display: grid;
+        .data-status {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #e8f4f8;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
         }
         
         @media (max-width: 768px) {
@@ -292,43 +241,17 @@
                 flex-direction: column;
             }
             
-            .calc-keyboard {
-                display: grid;
-            }
-            
-            /* Make inputs more touch-friendly on mobile */
-            input[type="text"] {
-                font-size: 16px;
-                padding: 12px 8px;
-            }
-            
-            .calc-btn {
-                height: 55px;
-                font-size: 22px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .calc-btn {
-                height: 50px;
-                font-size: 20px;
+            .action-buttons {
+                flex-direction: column;
             }
         }
     </style>
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Inventory Management System</h1>
             <p>Upload your Excel file and manage inventory with automatic calculations</p>
-            <div class="sync-indicator">
-                <span id="syncStatus">Connecting to Firebase...</span>
-                <div id="syncDot" class="sync-dot"></div>
-            </div>
         </header>
         
         <div class="upload-section">
@@ -336,9 +259,16 @@
                 <input type="file" id="fileInput" accept=".xlsx, .xls">
                 <button id="uploadBtn">Upload Excel File</button>
             </div>
+            
+            <div class="data-status" id="dataStatus">
+                Sample data loaded. No saved data found.
+            </div>
+            
             <div class="button-group">
                 <button id="exportBtn" class="export-btn">Export to Excel</button>
-                <button id="clearBtn" class="clear-btn">Clear All Data</button>
+                <button id="saveBtn" class="save-btn">Save Data</button>
+                <button id="loadBtn" class="load-btn">Load Saved Data</button>
+                <button id="deleteBtn" class="delete-btn">Delete All Data</button>
             </div>
             <p>Supported formats: .xlsx, .xls</p>
             <div id="errorMessage" class="error"></div>
@@ -356,36 +286,8 @@
             <textarea id="notepad" placeholder="Write your notes here..."></textarea>
         </div>
         
-        <!-- Calculator Keyboard with Numbers and Operators -->
-        <div class="calc-keyboard" id="calcKeyboard">
-            <div class="calc-btn number" data-value="7">7</div>
-            <div class="calc-btn number" data-value="8">8</div>
-            <div class="calc-btn number" data-value="9">9</div>
-            <div class="calc-btn operator" data-value="+">+</div>
-            
-            <div class="calc-btn number" data-value="4">4</div>
-            <div class="calc-btn number" data-value="5">5</div>
-            <div class="calc-btn number" data-value="6">6</div>
-            <div class="calc-btn operator" data-value="-">-</div>
-            
-            <div class="calc-btn number" data-value="1">1</div>
-            <div class="calc-btn number" data-value="2">2</div>
-            <div class="calc-btn number" data-value="3">3</div>
-            <div class="calc-btn operator" data-value="*">×</div>
-            
-            <div class="calc-btn number" data-value="0">0</div>
-            <div class="calc-btn decimal" data-value=".">.</div>
-            <div class="calc-btn clear" data-value="clear">C</div>
-            <div class="calc-btn operator" data-value="/">÷</div>
-            
-            <div class="calc-btn parentheses" data-value="(">(</div>
-            <div class="calc-btn parentheses" data-value=")">)</div>
-            <div class="calc-btn backspace" data-value="backspace">⌫</div>
-            <div class="calc-btn equals" data-value="=">=</div>
-        </div>
-        
         <footer>
-            <p>Inventory Management System &copy; 2023 | Real-time with Firebase</p>
+            <p>Inventory Management System &copy; 2023</p>
         </footer>
     </div>
 
@@ -393,110 +295,50 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyD4qsqlqE7Yx8SuPFF1x0n_J_B6h7sFXRU",
-            authDomain: "daily-inventory-cb279.firebaseapp.com",
-            projectId: "daily-inventory-cb279",
-            storageBucket: "daily-inventory-cb279.firebasestorage.app",
-            messagingSenderId: "992764671815",
-            appId: "1:992764671815:web:4068ee83214420501ffe62",
-            measurementId: "G-6NP07M3TVS"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        
         document.addEventListener('DOMContentLoaded', function() {
             const fileInput = document.getElementById('fileInput');
             const uploadBtn = document.getElementById('uploadBtn');
             const exportBtn = document.getElementById('exportBtn');
-            const clearBtn = document.getElementById('clearBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const loadBtn = document.getElementById('loadBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
             const inventoryTable = document.getElementById('inventoryTable');
             const errorMessage = document.getElementById('errorMessage');
             const successMessage = document.getElementById('successMessage');
             const notepad = document.getElementById('notepad');
-            const calcKeyboard = document.getElementById('calcKeyboard');
-            const syncStatus = document.getElementById('syncStatus');
-            const syncDot = document.getElementById('syncDot');
+            const dataStatus = document.getElementById('dataStatus');
             
-            let currentInput = null;
-            let tableData = [];
-            let isOnline = false;
+            let currentData = [];
+            let isDataLoaded = false;
             
-            // Firebase connection state listener
-            firebase.firestore().enablePersistence()
-                .then(() => {
-                    isOnline = true;
-                    updateSyncStatus('Connected to Firebase', true);
-                })
-                .catch((err) => {
-                    if (err.code == 'failed-precondition') {
-                        console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
-                    } else if (err.code == 'unimplemented') {
-                        console.warn('The current browser does not support persistence');
-                    }
-                    isOnline = true;
-                    updateSyncStatus('Connected to Firebase', true);
-                });
-            
-            // Listen for connection state changes
-            firebase.firestore().onSnapshotsInSync(() => {
-                isOnline = true;
-                updateSyncStatus('Synced with Firebase', true);
-            });
-            
-            // Load data from Firebase
-            loadDataFromFirebase();
-            
-            // Calculator Keyboard Event Listeners
-            calcKeyboard.addEventListener('click', function(e) {
-                if (e.target.classList.contains('calc-btn') && currentInput) {
-                    const value = e.target.dataset.value;
-                    
-                    if (value === 'backspace') {
-                        currentInput.value = currentInput.value.slice(0, -1);
-                        currentInput.dispatchEvent(new Event('input'));
-                    } else if (value === 'clear') {
-                        currentInput.value = '';
-                        currentInput.dispatchEvent(new Event('input'));
-                    } else if (value === '=') {
-                        // Calculate and close keyboard
-                        currentInput.dispatchEvent(new Event('blur'));
-                        hideKeyboard();
-                    } else {
-                        currentInput.value += value;
-                        currentInput.dispatchEvent(new Event('input'));
-                    }
-                }
-            });
-            
-            // Show keyboard when focusing on QTY input (mobile devices)
-            function showKeyboard(input) {
-                if (window.innerWidth <= 768) {
-                    currentInput = input;
-                    calcKeyboard.classList.add('active');
-                    
-                    // Prevent default keyboard from showing
-                    input.setAttribute('readonly', 'true');
-                    input.blur(); // Remove focus to prevent default keyboard
-                }
+            // Load saved notes from localStorage
+            const savedNotes = localStorage.getItem('inventoryNotes');
+            if (savedNotes) {
+                notepad.value = savedNotes;
             }
             
-            // Hide keyboard
-            function hideKeyboard() {
-                calcKeyboard.classList.remove('active');
-                if (currentInput) {
-                    currentInput.removeAttribute('readonly');
-                }
-                currentInput = null;
-            }
+            // Save notes when user types
+            notepad.addEventListener('input', function() {
+                localStorage.setItem('inventoryNotes', notepad.value);
+            });
+            
+            // Sample data to display initially
+            const sampleData = [
+                { SLNO: 1, ITEM: "200ML Paper Glass", UOM: "PCS", QTY: "", TOTAL: "" },
+                { SLNO: 2, ITEM: '4" Piri Piri Bun', UOM: "PCS", QTY: "", TOTAL: "" },
+                { SLNO: 3, ITEM: '4" Piri Piri Bun Frozen', UOM: "PCS", QTY: "", TOTAL: "" },
+                { SLNO: 4, ITEM: '4" Seeded Bun', UOM: "NOS", QTY: "", TOTAL: "" },
+                { SLNO: 5, ITEM: '4" Seeded Bun Frozen', UOM: "PCS", QTY: "2*48+6*6+48", TOTAL: "180" }
+            ];
+            
+            // Display sample data initially
+            displayTable(sampleData);
+            currentData = [...sampleData];
+            updateDataStatus();
             
             // Handle file upload
             uploadBtn.addEventListener('click', function() {
-                errorMessage.textContent = '';
-                successMessage.textContent = '';
+                clearMessages();
                 
                 if (fileInput.files.length === 0) {
                     showError('Please select an Excel file to upload.');
@@ -540,7 +382,7 @@
                         }
                         
                         // Process the data (skip header row)
-                        const newTableData = [];
+                        const tableData = [];
                         const headers = jsonData[0];
                         
                         // Find column indices
@@ -564,7 +406,7 @@
                         for (let i = 1; i < jsonData.length; i++) {
                             const row = jsonData[i];
                             if (row && row.length > 0) {
-                                newTableData.push({
+                                tableData.push({
                                     SLNO: slnoIndex >= 0 ? (row[slnoIndex] || i) : i,
                                     ITEM: itemIndex >= 0 ? (row[itemIndex] || '') : '',
                                     UOM: uomIndex >= 0 ? (row[uomIndex] || '') : '',
@@ -574,16 +416,16 @@
                             }
                         }
                         
-                        if (newTableData.length === 0) {
+                        if (tableData.length === 0) {
                             showError('No valid data found in the Excel file.');
                             return;
                         }
                         
-                        tableData = newTableData;
                         displayTable(tableData);
-                        saveDataToFirebase();
-                        showSuccess('Excel file uploaded and data saved successfully.');
-                        
+                        currentData = [...tableData];
+                        isDataLoaded = true;
+                        updateDataStatus();
+                        showSuccess('Excel file uploaded successfully!');
                     } catch (error) {
                         console.error('Error processing file:', error);
                         showError('Error processing the Excel file. Please make sure it is a valid Excel file.');
@@ -602,11 +444,19 @@
                 exportToExcel();
             });
             
-            // Handle clear all data
-            clearBtn.addEventListener('click', function() {
-                if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
-                    clearFirebaseData();
-                }
+            // Handle save data
+            saveBtn.addEventListener('click', function() {
+                saveData();
+            });
+            
+            // Handle load saved data
+            loadBtn.addEventListener('click', function() {
+                loadSavedData();
+            });
+            
+            // Handle delete all data
+            deleteBtn.addEventListener('click', function() {
+                deleteAllData();
             });
             
             // Function to display the table
@@ -614,21 +464,11 @@
                 // Clear existing table
                 inventoryTable.innerHTML = '';
                 
-                if (data.length === 0) {
-                    const emptyMessage = document.createElement('p');
-                    emptyMessage.textContent = 'No inventory data available. Upload an Excel file to get started.';
-                    emptyMessage.style.padding = '20px';
-                    emptyMessage.style.textAlign = 'center';
-                    emptyMessage.style.color = '#6c757d';
-                    inventoryTable.appendChild(emptyMessage);
-                    return;
-                }
-                
                 // Create table header
                 const thead = document.createElement('thead');
                 const headerRow = document.createElement('tr');
                 
-                ['SLNO', 'ITEM', 'UOM', 'QTY', 'TOTAL'].forEach(headerText => {
+                ['SLNO', 'ITEM', 'UOM', 'QTY', 'TOTAL', 'ACTIONS'].forEach(headerText => {
                     const th = document.createElement('th');
                     th.textContent = headerText;
                     headerRow.appendChild(th);
@@ -640,8 +480,9 @@
                 // Create table body
                 const tbody = document.createElement('tbody');
                 
-                data.forEach(row => {
+                data.forEach((row, index) => {
                     const tr = document.createElement('tr');
+                    tr.dataset.index = index;
                     
                     // SLNO column
                     const slnoCell = document.createElement('td');
@@ -663,16 +504,9 @@
                     const qtyInput = document.createElement('input');
                     qtyInput.type = 'text';
                     qtyInput.value = row.QTY || '';
-                    qtyInput.dataset.slno = row.SLNO;
-                    
-                    // Prevent default keyboard on mobile
-                    qtyInput.setAttribute('inputmode', 'none');
-                    
+                    qtyInput.dataset.index = index;
                     qtyInput.addEventListener('input', handleQtyChange);
                     qtyInput.addEventListener('blur', handleQtyChange);
-                    qtyInput.addEventListener('focus', function() {
-                        showKeyboard(this);
-                    });
                     qtyCell.appendChild(qtyInput);
                     tr.appendChild(qtyCell);
                     
@@ -686,8 +520,34 @@
                         totalCell.textContent = row.TOTAL || '';
                     }
                     totalCell.classList.add('total-cell');
-                    totalCell.dataset.slno = row.SLNO;
+                    totalCell.dataset.index = index;
                     tr.appendChild(totalCell);
+                    
+                    // ACTIONS column
+                    const actionsCell = document.createElement('td');
+                    const actionButtons = document.createElement('div');
+                    actionButtons.className = 'action-buttons';
+                    
+                    // Edit button
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Edit';
+                    editBtn.className = 'action-btn edit-btn';
+                    editBtn.onclick = function() {
+                        editRow(index);
+                    };
+                    
+                    // Remove button
+                    const removeBtn = document.createElement('button');
+                    removeBtn.textContent = 'Remove';
+                    removeBtn.className = 'action-btn remove-btn';
+                    removeBtn.onclick = function() {
+                        removeRow(index);
+                    };
+                    
+                    actionButtons.appendChild(editBtn);
+                    actionButtons.appendChild(removeBtn);
+                    actionsCell.appendChild(actionButtons);
+                    tr.appendChild(actionsCell);
                     
                     tbody.appendChild(tr);
                 });
@@ -697,58 +557,182 @@
             
             // Handle changes in QTY input
             function handleQtyChange(event) {
-                const slno = event.target.dataset.slno;
+                const index = event.target.dataset.index;
                 const expression = event.target.value.trim();
                 
+                // Update currentData
+                currentData[index].QTY = expression;
+                
                 // Find the corresponding TOTAL cell
-                const totalCell = document.querySelector(`.total-cell[data-slno="${slno}"]`);
+                const totalCell = document.querySelector(`.total-cell[data-index="${index}"]`);
                 
                 if (!expression) {
                     totalCell.textContent = '';
-                    updateTableData(slno, '', '');
+                    currentData[index].TOTAL = '';
                     return;
                 }
                 
                 try {
                     const result = evaluateExpression(expression);
                     totalCell.textContent = result;
-                    updateTableData(slno, expression, result);
+                    currentData[index].TOTAL = result.toString();
                 } catch (error) {
                     totalCell.textContent = 'Error';
-                    updateTableData(slno, expression, 'Error');
+                    currentData[index].TOTAL = 'Error';
                 }
             }
             
-            // Update table data and save to Firebase
-            function updateTableData(slno, qty, total) {
-                const index = tableData.findIndex(item => item.SLNO == slno);
-                if (index !== -1) {
-                    tableData[index].QTY = qty;
-                    tableData[index].TOTAL = total;
-                    saveDataToFirebase();
+            // Edit row function
+            function editRow(index) {
+                const row = document.querySelector(`tr[data-index="${index}"]`);
+                const cells = row.querySelectorAll('td');
+                
+                // Make ITEM and UOM editable
+                const itemCell = cells[1];
+                const uomCell = cells[2];
+                
+                const currentItem = itemCell.textContent;
+                const currentUOM = uomCell.textContent;
+                
+                // Create input for ITEM
+                const itemInput = document.createElement('input');
+                itemInput.type = 'text';
+                itemInput.value = currentItem;
+                itemInput.style.width = '100%';
+                
+                // Create input for UOM
+                const uomInput = document.createElement('input');
+                uomInput.type = 'text';
+                uomInput.value = currentUOM;
+                uomInput.style.width = '100%';
+                
+                // Replace text with inputs
+                itemCell.innerHTML = '';
+                itemCell.appendChild(itemInput);
+                
+                uomCell.innerHTML = '';
+                uomCell.appendChild(uomInput);
+                
+                // Change Edit button to Save button
+                const actionButtons = cells[5].querySelector('.action-buttons');
+                actionButtons.innerHTML = '';
+                
+                const saveBtn = document.createElement('button');
+                saveBtn.textContent = 'Save';
+                saveBtn.className = 'action-btn edit-btn';
+                saveBtn.onclick = function() {
+                    saveRowEdit(index, itemInput.value, uomInput.value);
+                };
+                
+                const cancelBtn = document.createElement('button');
+                cancelBtn.textContent = 'Cancel';
+                cancelBtn.className = 'action-btn remove-btn';
+                cancelBtn.onclick = function() {
+                    cancelRowEdit(index, currentItem, currentUOM);
+                };
+                
+                actionButtons.appendChild(saveBtn);
+                actionButtons.appendChild(cancelBtn);
+            }
+            
+            // Save row edit
+            function saveRowEdit(index, newItem, newUOM) {
+                currentData[index].ITEM = newItem;
+                currentData[index].UOM = newUOM;
+                
+                // Refresh the row display
+                refreshRow(index);
+                showSuccess('Row updated successfully!');
+            }
+            
+            // Cancel row edit
+            function cancelRowEdit(index, originalItem, originalUOM) {
+                currentData[index].ITEM = originalItem;
+                currentData[index].UOM = originalUOM;
+                
+                // Refresh the row display
+                refreshRow(index);
+            }
+            
+            // Remove row
+            function removeRow(index) {
+                if (confirm('Are you sure you want to remove this item?')) {
+                    currentData.splice(index, 1);
+                    
+                    // Update SLNO for remaining rows
+                    currentData.forEach((row, i) => {
+                        row.SLNO = i + 1;
+                    });
+                    
+                    displayTable(currentData);
+                    showSuccess('Row removed successfully!');
+                    updateDataStatus();
                 }
+            }
+            
+            // Refresh a single row
+            function refreshRow(index) {
+                const rowData = currentData[index];
+                const row = document.querySelector(`tr[data-index="${index}"]`);
+                const cells = row.querySelectorAll('td');
+                
+                // Update SLNO
+                cells[0].textContent = rowData.SLNO;
+                
+                // Update ITEM
+                cells[1].textContent = rowData.ITEM;
+                
+                // Update UOM
+                cells[2].textContent = rowData.UOM;
+                
+                // Update QTY input
+                const qtyInput = cells[3].querySelector('input');
+                qtyInput.value = rowData.QTY || '';
+                
+                // Update TOTAL
+                cells[4].textContent = rowData.TOTAL || '';
+                cells[4].className = 'total-cell';
+                cells[4].dataset.index = index;
+                
+                // Restore action buttons
+                const actionButtons = document.createElement('div');
+                actionButtons.className = 'action-buttons';
+                
+                const editBtn = document.createElement('button');
+                editBtn.textContent = 'Edit';
+                editBtn.className = 'action-btn edit-btn';
+                editBtn.onclick = function() {
+                    editRow(index);
+                };
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = 'Remove';
+                removeBtn.className = 'action-btn remove-btn';
+                removeBtn.onclick = function() {
+                    removeRow(index);
+                };
+                
+                actionButtons.appendChild(editBtn);
+                actionButtons.appendChild(removeBtn);
+                cells[5].innerHTML = '';
+                cells[5].appendChild(actionButtons);
             }
             
             // Safe expression evaluation
             function evaluateExpression(expression) {
-                // Replace multiplication and division symbols
-                const sanitized = expression
-                    .replace(/×/g, '*')
-                    .replace(/÷/g, '/')
-                    .replace(/[^0-9+\-*/().]/g, '');
+                // Remove any potentially dangerous characters except math operators
+                const sanitized = expression.replace(/[^0-9+\-*/().\s]/g, '');
                 
-                // Use a safer evaluation method
                 try {
-                    const tokens = sanitized.match(/(\d+\.?\d*|[+\-*/()])/g);
-                    if (!tokens) throw new Error('Invalid expression');
-                    
+                    // Use Function constructor in a safe way
                     const result = Function(`"use strict"; return (${sanitized})`)();
                     
                     if (typeof result !== 'number' || isNaN(result) || !isFinite(result)) {
                         throw new Error('Invalid result');
                     }
                     
-                    return result;
+                    // Round to 2 decimal places if needed
+                    return Math.round(result * 100) / 100;
                 } catch (error) {
                     throw new Error('Cannot evaluate expression');
                 }
@@ -757,20 +741,18 @@
             // Export table data to Excel
             function exportToExcel() {
                 try {
-                    if (tableData.length === 0) {
+                    if (currentData.length === 0) {
                         showError('No data to export.');
                         return;
                     }
                     
-                    // Create data array
-                    const data = [];
+                    // Prepare data for export
+                    const exportData = [
+                        ['SLNO', 'ITEM', 'UOM', 'QTY', 'TOTAL']
+                    ];
                     
-                    // Add headers
-                    data.push(['SLNO', 'ITEM', 'UOM', 'QTY', 'TOTAL']);
-                    
-                    // Add data rows
-                    tableData.forEach(row => {
-                        data.push([
+                    currentData.forEach(row => {
+                        exportData.push([
                             row.SLNO,
                             row.ITEM,
                             row.UOM,
@@ -780,7 +762,7 @@
                     });
                     
                     // Create worksheet
-                    const ws = XLSX.utils.aoa_to_sheet(data);
+                    const ws = XLSX.utils.aoa_to_sheet(exportData);
                     
                     // Create workbook
                     const wb = XLSX.utils.book_new();
@@ -792,114 +774,120 @@
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'inventory_data.xlsx';
+                    a.download = `inventory_${new Date().toISOString().split('T')[0]}.xlsx`;
                     a.click();
                     URL.revokeObjectURL(url);
                     
-                    showSuccess('Data exported to Excel successfully.');
-                    
+                    showSuccess('Data exported successfully!');
                 } catch (error) {
                     console.error('Error exporting to Excel:', error);
                     showError('Error exporting data to Excel.');
                 }
             }
             
-            // Firebase Functions
-            function loadDataFromFirebase() {
-                db.collection("inventory").doc("data")
-                    .onSnapshot((doc) => {
-                        if (doc.exists) {
-                            const data = doc.data();
-                            tableData = data.tableData || [];
-                            notepad.value = data.notes || '';
-                            displayTable(tableData);
-                            updateSyncStatus('Data loaded from Firebase', true);
-                        } else {
-                            // No data in Firebase, use sample data
-                            const sampleData = [
-                                { SLNO: 1, ITEM: "200ML Paper Glass", UOM: "PCS", QTY: "", TOTAL: "" },
-                                { SLNO: 2, ITEM: '4" Piri Piri Bun', UOM: "PCS", QTY: "", TOTAL: "" },
-                                { SLNO: 3, ITEM: '4" Piri Piri Bun Frozen', UOM: "PCS", QTY: "", TOTAL: "" },
-                                { SLNO: 4, ITEM: '4" Seeded Bun', UOM: "NOS", QTY: "", TOTAL: "" },
-                                { SLNO: 5, ITEM: '4" Seeded Bun Frozen', UOM: "PCS", QTY: "2*48+6*6+48", TOTAL: "180" }
-                            ];
-                            tableData = sampleData;
-                            displayTable(tableData);
-                            saveDataToFirebase(); // Save sample data to Firebase
-                        }
-                    }, (error) => {
-                        console.error("Error loading data from Firebase:", error);
-                        updateSyncStatus('Error connecting to Firebase', false);
-                    });
+            // Save data to localStorage
+            function saveData() {
+                try {
+                    localStorage.setItem('inventoryData', JSON.stringify(currentData));
+                    isDataLoaded = true;
+                    updateDataStatus();
+                    showSuccess('Data saved successfully!');
+                } catch (error) {
+                    console.error('Error saving data:', error);
+                    showError('Error saving data. Your browser may not support localStorage.');
+                }
             }
             
-            function saveDataToFirebase() {
-                const notes = notepad.value;
+            // Load saved data from localStorage
+            function loadSavedData() {
+                try {
+                    const savedData = localStorage.getItem('inventoryData');
+                    if (!savedData) {
+                        showError('No saved data found.');
+                        return;
+                    }
+                    
+                    const parsedData = JSON.parse(savedData);
+                    if (parsedData.length === 0) {
+                        showError('Saved data is empty.');
+                        return;
+                    }
+                    
+                    displayTable(parsedData);
+                    currentData = [...parsedData];
+                    isDataLoaded = true;
+                    updateDataStatus();
+                    showSuccess('Saved data loaded successfully!');
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    showError('Error loading saved data.');
+                }
+            }
+            
+            // Delete all data
+            function deleteAllData() {
+                if (confirm('Are you sure you want to delete all data? This action cannot be undone.')) {
+                    // Clear current data
+                    currentData = [];
+                    
+                    // Clear localStorage
+                    localStorage.removeItem('inventoryData');
+                    
+                    // Reset to sample data
+                    displayTable(sampleData);
+                    currentData = [...sampleData];
+                    isDataLoaded = false;
+                    updateDataStatus();
+                    showSuccess('All data deleted successfully!');
+                }
+            }
+            
+            // Update data status display
+            function updateDataStatus() {
+                const savedData = localStorage.getItem('inventoryData');
+                const hasSavedData = savedData && JSON.parse(savedData).length > 0;
                 
-                db.collection("inventory").doc("data").set({
-                    tableData: tableData,
-                    notes: notes,
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                })
-                .then(() => {
-                    updateSyncStatus('Data saved to Firebase', true);
-                })
-                .catch((error) => {
-                    console.error("Error saving data to Firebase:", error);
-                    updateSyncStatus('Error saving to Firebase', false);
-                });
-            }
-            
-            function clearFirebaseData() {
-                db.collection("inventory").doc("data").delete()
-                .then(() => {
-                    tableData = [];
-                    notepad.value = '';
-                    displayTable([]);
-                    showSuccess('All data cleared successfully.');
-                    updateSyncStatus('Data cleared from Firebase', true);
-                })
-                .catch((error) => {
-                    console.error("Error clearing data from Firebase:", error);
-                    showError('Error clearing data from Firebase.');
-                });
-            }
-            
-            // Save notes to Firebase when changed
-            notepad.addEventListener('input', function() {
-                saveDataToFirebase();
-            });
-            
-            function updateSyncStatus(message, isConnected) {
-                syncStatus.textContent = message;
-                syncDot.style.backgroundColor = isConnected ? '#27ae60' : '#e74c3c';
+                let statusText = '';
+                let borderColor = '#3498db';
+                
+                if (hasSavedData && isDataLoaded) {
+                    statusText = `Loaded ${currentData.length} items from saved data.`;
+                    borderColor = '#27ae60';
+                } else if (hasSavedData && !isDataLoaded) {
+                    statusText = `${currentData.length} items in memory. Saved data available.`;
+                    borderColor = '#f39c12';
+                } else {
+                    statusText = `${currentData.length} items in memory. No saved data.`;
+                    borderColor = '#3498db';
+                }
+                
+                dataStatus.textContent = statusText;
+                dataStatus.style.borderLeftColor = borderColor;
             }
             
             // Show error message
             function showError(message) {
                 errorMessage.textContent = message;
                 successMessage.textContent = '';
+                setTimeout(() => {
+                    errorMessage.textContent = '';
+                }, 5000);
             }
             
             // Show success message
             function showSuccess(message) {
                 successMessage.textContent = message;
                 errorMessage.textContent = '';
-                
-                // Auto-hide success message after 3 seconds
                 setTimeout(() => {
                     successMessage.textContent = '';
-                }, 3000);
+                }, 5000);
             }
             
-            // Close keyboard when clicking outside
-            document.addEventListener('click', function(e) {
-                if (calcKeyboard.classList.contains('active') && 
-                    !calcKeyboard.contains(e.target) && 
-                    !e.target.classList.contains('qty-input')) {
-                    hideKeyboard();
-                }
-            });
+            // Clear all messages
+            function clearMessages() {
+                errorMessage.textContent = '';
+                successMessage.textContent = '';
+            }
         });
     </script>
 </body>
